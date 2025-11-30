@@ -1,7 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
-import html2canvas from "html2canvas"
+import { useState, useRef, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import {
@@ -81,14 +80,22 @@ const quotes = [
 // 主题配置
 type Theme = "soft" | "dark" | "neon"
 
+interface GradientColors {
+  start: string
+  middle: string
+  end: string
+}
+
 interface ThemeConfig {
   name: string
   icon: typeof Sun
-  gradients: string[]
+  gradients: GradientColors[]
+  tailwindGradients: string[]
   cardBg: string
   cardText: string
   cardBorder: string
   buttonStyle: string
+  textColor: string
 }
 
 const themes: Record<Theme, ThemeConfig> = {
@@ -96,6 +103,14 @@ const themes: Record<Theme, ThemeConfig> = {
     name: "柔和风",
     icon: Sun,
     gradients: [
+      { start: "#fecdd3", middle: "#fbcfe8", end: "#fed7aa" },
+      { start: "#bae6fd", middle: "#a5f3fc", end: "#99f6e4" },
+      { start: "#ddd6fe", middle: "#e9d5ff", end: "#f5d0fe" },
+      { start: "#fde68a", middle: "#fef08a", end: "#d9f99d" },
+      { start: "#fbcfe8", middle: "#fda4af", end: "#fecaca" },
+      { start: "#a7f3d0", middle: "#99f6e4", end: "#a5f3fc" },
+    ],
+    tailwindGradients: [
       "from-rose-200 via-pink-200 to-orange-200",
       "from-sky-200 via-cyan-200 to-teal-200",
       "from-violet-200 via-purple-200 to-fuchsia-200",
@@ -107,11 +122,20 @@ const themes: Record<Theme, ThemeConfig> = {
     cardText: "text-gray-800",
     cardBorder: "border-white/50",
     buttonStyle: "bg-white/70 hover:bg-white/90 text-gray-700",
+    textColor: "#1f2937",
   },
   dark: {
     name: "深色",
     icon: Moon,
     gradients: [
+      { start: "#0f172a", middle: "#581c87", end: "#0f172a" },
+      { start: "#111827", middle: "#1e3a8a", end: "#111827" },
+      { start: "#18181b", middle: "#064e3b", end: "#18181b" },
+      { start: "#171717", middle: "#881337", end: "#171717" },
+      { start: "#1c1917", middle: "#78350f", end: "#1c1917" },
+      { start: "#0f172a", middle: "#155e75", end: "#0f172a" },
+    ],
+    tailwindGradients: [
       "from-slate-900 via-purple-900 to-slate-900",
       "from-gray-900 via-blue-900 to-gray-900",
       "from-zinc-900 via-emerald-900 to-zinc-900",
@@ -123,11 +147,20 @@ const themes: Record<Theme, ThemeConfig> = {
     cardText: "text-white",
     cardBorder: "border-white/10",
     buttonStyle: "bg-white/10 hover:bg-white/20 text-white",
+    textColor: "#ffffff",
   },
   neon: {
     name: "霓虹",
     icon: Sparkles,
     gradients: [
+      { start: "#d946ef", middle: "#a855f7", end: "#06b6d4" },
+      { start: "#f97316", middle: "#ec4899", end: "#a855f7" },
+      { start: "#4ade80", middle: "#06b6d4", end: "#3b82f6" },
+      { start: "#facc15", middle: "#f97316", end: "#ef4444" },
+      { start: "#ec4899", middle: "#ef4444", end: "#eab308" },
+      { start: "#6366f1", middle: "#a855f7", end: "#ec4899" },
+    ],
+    tailwindGradients: [
       "from-fuchsia-500 via-purple-500 to-cyan-500",
       "from-orange-500 via-pink-500 to-purple-500",
       "from-green-400 via-cyan-500 to-blue-500",
@@ -139,6 +172,7 @@ const themes: Record<Theme, ThemeConfig> = {
     cardText: "text-white",
     cardBorder: "border-white/20",
     buttonStyle: "bg-white/20 hover:bg-white/30 text-white",
+    textColor: "#ffffff",
   },
 }
 
@@ -147,17 +181,17 @@ export function WallpaperGenerator() {
   const [currentGradientIndex, setCurrentGradientIndex] = useState(0)
   const [currentQuoteIndex, setCurrentQuoteIndex] = useState(0)
   const [isAnimating, setIsAnimating] = useState(false)
-  const wallpaperRef = useRef<HTMLDivElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
 
   const theme = themes[currentTheme]
-  const gradient = theme.gradients[currentGradientIndex]
+  const gradient = theme.tailwindGradients[currentGradientIndex]
+  const gradientColors = theme.gradients[currentGradientIndex]
   const quote = quotes[currentQuoteIndex]
 
   // 随机切换壁纸和名言
   const handleShuffle = () => {
     setIsAnimating(true)
 
-    // 随机选择新的渐变和名言
     const newGradientIndex = Math.floor(Math.random() * theme.gradients.length)
     const newQuoteIndex = Math.floor(Math.random() * quotes.length)
 
@@ -175,40 +209,123 @@ export function WallpaperGenerator() {
     setTimeout(() => setIsAnimating(false), 500)
   }
 
-  // 保存为 PNG
-  const handleDownload = async () => {
-    if (!wallpaperRef.current) return
+  // 使用 Canvas API 绘制并保存壁纸
+  const handleDownload = useCallback(() => {
+    const canvas = document.createElement("canvas")
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
 
-    try {
-      const canvas = await html2canvas(wallpaperRef.current, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: null,
-      })
+    // 设置高分辨率
+    const width = 1920
+    const height = 1080
+    canvas.width = width
+    canvas.height = height
 
-      const link = document.createElement("a")
-      link.download = `wallpaper-${Date.now()}.png`
-      link.href = canvas.toDataURL("image/png")
-      link.click()
-    } catch (error) {
-      console.error("Download failed:", error)
+    // 绘制渐变背景
+    const grd = ctx.createLinearGradient(0, 0, width, height)
+    grd.addColorStop(0, gradientColors.start)
+    grd.addColorStop(0.5, gradientColors.middle)
+    grd.addColorStop(1, gradientColors.end)
+    ctx.fillStyle = grd
+    ctx.fillRect(0, 0, width, height)
+
+    // 添加装饰性模糊圆形
+    ctx.globalAlpha = 0.15
+    ctx.beginPath()
+    ctx.arc(width * 0.85, height * 0.15, 300, 0, Math.PI * 2)
+    ctx.fillStyle = "#ffffff"
+    ctx.fill()
+
+    ctx.beginPath()
+    ctx.arc(width * 0.15, height * 0.85, 350, 0, Math.PI * 2)
+    ctx.fillStyle = "#ffffff"
+    ctx.fill()
+
+    ctx.globalAlpha = 1
+
+    // 绘制半透明卡片背景
+    const cardWidth = 900
+    const cardHeight = 400
+    const cardX = (width - cardWidth) / 2
+    const cardY = (height - cardHeight) / 2
+    const cardRadius = 40
+
+    ctx.globalAlpha = currentTheme === "soft" ? 0.6 : 0.4
+    ctx.fillStyle = currentTheme === "soft" ? "#ffffff" : "#000000"
+    ctx.beginPath()
+    ctx.roundRect(cardX, cardY, cardWidth, cardHeight, cardRadius)
+    ctx.fill()
+    ctx.globalAlpha = 1
+
+    // 绘制引号符号
+    ctx.font = "bold 60px serif"
+    ctx.fillStyle = theme.textColor
+    ctx.globalAlpha = 0.3
+    ctx.fillText("\u201C", cardX + 60, cardY + 90)
+    ctx.globalAlpha = 1
+
+    // 绘制名言文字
+    ctx.font = "32px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    ctx.fillStyle = theme.textColor
+    ctx.textAlign = "center"
+
+    // 自动换行
+    const maxWidth = cardWidth - 120
+    const lineHeight = 50
+    const words = quote.text
+    let line = ""
+    let y = cardY + 180
+    const lines: string[] = []
+
+    for (let i = 0; i < words.length; i++) {
+      const testLine = line + words[i]
+      const metrics = ctx.measureText(testLine)
+      if (metrics.width > maxWidth && line !== "") {
+        lines.push(line)
+        line = words[i]
+      } else {
+        line = testLine
+      }
     }
-  }
+    lines.push(line)
+
+    // 居中绘制所有行
+    const totalHeight = lines.length * lineHeight
+    y = cardY + (cardHeight - totalHeight) / 2 + 40
+
+    lines.forEach((l) => {
+      ctx.fillText(l, width / 2, y)
+      y += lineHeight
+    })
+
+    // 绘制作者
+    ctx.font = "24px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    ctx.globalAlpha = 0.7
+    ctx.fillText(`— ${quote.author}`, width / 2, cardY + cardHeight - 60)
+    ctx.globalAlpha = 1
+
+    // 下载
+    const link = document.createElement("a")
+    link.download = `wallpaper-${Date.now()}.png`
+    link.href = canvas.toDataURL("image/png")
+    link.click()
+  }, [gradientColors, quote, theme.textColor, currentTheme])
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
+      {/* 隐藏的 canvas 用于导出 */}
+      <canvas ref={canvasRef} className="hidden" />
+
       {/* 壁纸区域 */}
       <div
-        ref={wallpaperRef}
         className={cn(
-          "absolute inset-0 bg-gradient-to-br transition-all duration-700 ease-in-out",
+          "absolute inset-0 bg-linear-to-br transition-all duration-700 ease-in-out",
           gradient,
           isAnimating && "scale-105 opacity-90"
         )}
       >
         {/* 装饰性图案 */}
         <div className="absolute inset-0 overflow-hidden">
-          {/* 浮动圆形装饰 */}
           <div
             className={cn(
               "absolute -top-20 -right-20 h-80 w-80 rounded-full blur-3xl transition-all duration-1000",
@@ -246,12 +363,7 @@ export function WallpaperGenerator() {
             )}
           >
             {/* 引号装饰 */}
-            <Quote
-              className={cn(
-                "mb-4 h-10 w-10 opacity-30",
-                theme.cardText
-              )}
-            />
+            <Quote className={cn("mb-4 h-10 w-10 opacity-30", theme.cardText)} />
 
             {/* 名言内容 */}
             <blockquote className="space-y-6">
@@ -287,9 +399,7 @@ export function WallpaperGenerator() {
         >
           {/* 主题切换按钮 */}
           <div className="flex items-center gap-1">
-            <Palette
-              className={cn("ml-2 h-4 w-4 opacity-50", theme.cardText)}
-            />
+            <Palette className={cn("ml-2 h-4 w-4 opacity-50", theme.cardText)} />
             {(Object.keys(themes) as Theme[]).map((themeKey) => {
               const ThemeIcon = themes[themeKey].icon
               return (
@@ -344,7 +454,7 @@ export function WallpaperGenerator() {
         </div>
       </div>
 
-      {/* 右下角刷新计数 */}
+      {/* 右下角刷新按钮 */}
       <button
         onClick={handleShuffle}
         className={cn(
