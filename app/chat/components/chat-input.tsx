@@ -114,7 +114,7 @@ export function ChatInput() {
   }
 
   return (
-    <div className="border-t border-border p-4">
+    <div className="sticky bottom-0 border-t border-border bg-background p-4">
       <div className="mx-auto max-w-3xl">
         {/* 文件预览 - 使用 blob URL 预览本地文件，无法使用 next/image */}
         {filePreview && (

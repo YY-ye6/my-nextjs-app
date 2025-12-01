@@ -1,8 +1,7 @@
 "use client"
 
-import { ScrollArea } from "@/components/ui/scroll-area"
+import { useEffect, useRef } from "react"
 import { ChatMessage } from "./chat-message"
-import { useAutoScroll } from "@/hooks/use-auto-scroll"
 import type { ChatMessage as ChatMessageType } from "@/lib/types"
 
 interface ChatMessagesProps {
@@ -10,7 +9,12 @@ interface ChatMessagesProps {
 }
 
 export function ChatMessages({ messages }: ChatMessagesProps) {
-  const { containerRef } = useAutoScroll(messages)
+  const bottomRef = useRef<HTMLDivElement>(null)
+
+  // 新消息时自动滚动到底部
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [messages])
 
   if (messages.length === 0) {
     return (
@@ -24,12 +28,13 @@ export function ChatMessages({ messages }: ChatMessagesProps) {
   }
 
   return (
-    <ScrollArea className="flex-1" ref={containerRef}>
+    <div className="flex-1">
       <div className="mx-auto max-w-3xl space-y-4 p-4">
         {messages.map((message) => (
           <ChatMessage key={message.id} message={message} />
         ))}
+        <div ref={bottomRef} />
       </div>
-    </ScrollArea>
+    </div>
   )
 }

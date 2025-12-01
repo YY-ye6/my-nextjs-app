@@ -14,7 +14,7 @@ export function ChatSidebar() {
   const switchConversation = useChatStore((s) => s.switchConversation)
 
   return (
-    <aside className="flex h-full w-[280px] flex-col border-r border-border bg-sidebar">
+    <aside className="flex h-full w-[280px] shrink-0 flex-col border-r border-border bg-sidebar">
       {/* 新建会话按钮 */}
       <div className="p-4">
         <Button
