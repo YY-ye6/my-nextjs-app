@@ -1,6 +1,5 @@
 "use client"
 
-import Image from "next/image"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 import type { ChatMessage as ChatMessageType } from "@/lib/types"
@@ -44,13 +43,12 @@ export function ChatMessage({ message }: ChatMessageProps) {
 
         {/* 图片预览 */}
         {message.file && (
-          <div className="relative mt-2 h-48 w-full">
-            <Image
+          <div className="mt-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
               src={message.file.url}
               alt={message.file.name}
-              fill
-              className="rounded-lg object-cover"
-              unoptimized
+              className="max-h-48 max-w-full rounded-lg object-contain"
             />
           </div>
         )}
