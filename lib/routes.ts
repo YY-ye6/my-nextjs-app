@@ -1,4 +1,4 @@
-import { LucideIcon, Palette, Home, Settings, FileText } from "lucide-react"
+import { LucideIcon, Palette, MessageSquare } from "lucide-react"
 
 export interface Route {
   path: string
@@ -16,12 +16,11 @@ export const routes: Route[] = [
     icon: Palette,
     color: "from-purple-500 to-pink-500",
   },
-  // 在这里添加更多路由
-  // {
-  //   path: "/your-route",
-  //   title: "标题",
-  //   description: "描述",
-  //   icon: Home,
-  //   color: "from-blue-500 to-cyan-500",
-  // },
+  {
+    path: "/chat",
+    title: "Mini Chat",
+    description: "AI 聊天助手",
+    icon: MessageSquare,
+    color: "from-blue-500 to-cyan-500",
+  },
 ]
