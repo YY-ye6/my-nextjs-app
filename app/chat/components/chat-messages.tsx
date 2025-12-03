@@ -1,7 +1,10 @@
 "use client"
 
 import { useEffect, useRef } from "react"
+import { Bot, Loader2 } from "lucide-react"
 import { ChatMessage } from "./chat-message"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { useChatStore } from "@/lib/store"
 import type { ChatMessage as ChatMessageType } from "@/lib/types"
 
 interface ChatMessagesProps {
@@ -10,11 +13,12 @@ interface ChatMessagesProps {
 
 export function ChatMessages({ messages }: ChatMessagesProps) {
   const bottomRef = useRef<HTMLDivElement>(null)
+  const isLoading = useChatStore((s) => s.isLoading)
 
-  // 新消息时自动滚动到底部
+  // 新消息或加载状态变化时自动滚动到底部
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages])
+  }, [messages, isLoading])
 
   if (messages.length === 0) {
     return (
@@ -33,6 +37,21 @@ export function ChatMessages({ messages }: ChatMessagesProps) {
         {messages.map((message) => (
           <ChatMessage key={message.id} message={message} />
         ))}
+
+        {/* 思考中状态 */}
+        {isLoading && (
+          <div className="flex items-start gap-3">
+            <Avatar className="h-8 w-8 shrink-0">
+              <AvatarFallback className="bg-muted">
+                <Bot className="h-4 w-4" />
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex items-center gap-2 rounded-2xl rounded-bl-md bg-muted px-4 py-2 text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+            </div>
+          </div>
+        )}
+
         <div ref={bottomRef} />
       </div>
     </div>
