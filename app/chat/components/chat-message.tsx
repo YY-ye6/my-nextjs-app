@@ -1,5 +1,6 @@
 "use client"
 
+import Markdown from "react-markdown"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 import type { ChatMessage as ChatMessageType } from "@/lib/types"
@@ -37,13 +38,17 @@ export function ChatMessage({ message }: ChatMessageProps) {
           "max-w-[80%] rounded-2xl px-4 py-2",
           isUser
             ? "rounded-br-md bg-primary text-primary-foreground"
-            : "rounded-bl-md bg-muted text-muted-foreground"
+            : "rounded-bl-md bg-muted"
         )}
       >
         {isEmptyAssistant ? (
           <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
+        ) : isUser ? (
           <p className="whitespace-pre-wrap break-words">{message.content}</p>
+        ) : (
+          <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-blockquote:my-2">
+            <Markdown>{message.content}</Markdown>
+          </div>
         )}
 
         {/* 图片预览 */}
