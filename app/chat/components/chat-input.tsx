@@ -135,7 +135,7 @@ export function ChatInput() {
         )}
 
         {/* 输入区域 */}
-        <div className="flex items-end gap-2">
+        <div className="flex items-center gap-2">
           {/* 文件上传按钮 */}
           <input
             ref={fileInputRef}
