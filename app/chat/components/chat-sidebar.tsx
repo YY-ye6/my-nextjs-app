@@ -28,7 +28,7 @@ export function ChatSidebar() {
       </div>
 
       {/* 会话列表 */}
-      <ScrollArea className="flex-1 px-2">
+      <ScrollArea className="flex-1 min-h-0 px-2">
         <div className="space-y-1">
           {conversations.map((conv) => (
             <button
