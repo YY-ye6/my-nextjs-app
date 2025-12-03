@@ -50,6 +50,18 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
   // 行为
   createConversation: () => {
+    const { conversations } = get()
+
+    // 检查是否已存在空会话
+    const emptyConversation = conversations.find((c) => c.messages.length === 0)
+    if (emptyConversation) {
+      // 切换到已存在的空会话
+      set({ currentConversationId: emptyConversation.id })
+      get().persist()
+      return emptyConversation.id
+    }
+
+    // 创建新会话
     const id = generateId()
     const now = Date.now()
     const newConversation: Conversation = {
