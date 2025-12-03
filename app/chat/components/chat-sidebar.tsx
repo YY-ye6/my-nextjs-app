@@ -48,7 +48,7 @@ export function ChatSidebar() {
       </ScrollArea>
 
       {/* 底部主题切换 */}
-      <div className="border-t border-border p-4">
+      <div className="flex items-center border-t border-border p-4 min-h-[76px]">
         <ThemeToggle />
       </div>
     </aside>
