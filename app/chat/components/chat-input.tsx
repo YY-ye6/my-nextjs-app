@@ -5,7 +5,7 @@ import { Send, Paperclip, X, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { useChatStore, selectCurrentConversation } from "@/lib/store"
-import { sendChatMessage, uploadFile } from "@/lib/api"
+import { sendChatMessageStream, uploadFile } from "@/lib/api"
 import type { ChatMessage, UploadedFile } from "@/lib/types"
 
 export function ChatInput() {
@@ -14,11 +14,14 @@ export function ChatInput() {
   const [filePreview, setFilePreview] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const streamContentRef = useRef("")
 
   const currentConversation = useChatStore(selectCurrentConversation)
   const addMessage = useChatStore((s) => s.addMessage)
+  const updateMessageContent = useChatStore((s) => s.updateMessageContent)
   const isLoading = useChatStore((s) => s.isLoading)
   const setLoading = useChatStore((s) => s.setLoading)
+  const persist = useChatStore((s) => s.persist)
 
   const canSend = (input.trim() || file) && !isLoading && !isUploading
 
@@ -85,22 +88,38 @@ export function ChatInput() {
     setInput("")
     handleRemoveFile()
 
-    // 发送到 API
+    // 创建空的助手消息用于流式更新
+    const assistantMessageId = crypto.randomUUID()
+    const assistantMessage: ChatMessage = {
+      id: assistantMessageId,
+      role: "assistant",
+      content: "",
+      createdAt: Date.now(),
+    }
+    addMessage(assistantMessage)
+    streamContentRef.current = ""
+
+    // 发送到 API（流式）
     try {
       setLoading(true)
       const allMessages = [...currentConversation.messages, userMessage]
-      const response = await sendChatMessage(allMessages)
 
-      // 添加助手消息
-      const assistantMessage: ChatMessage = {
-        id: response.id,
-        role: "assistant",
-        content: response.content,
-        createdAt: Date.now(),
-      }
-      addMessage(assistantMessage)
+      await sendChatMessageStream(
+        allMessages,
+        // onChunk: 收到新内容时累加并更新
+        (content) => {
+          streamContentRef.current += content
+          updateMessageContent(assistantMessageId, streamContentRef.current)
+        },
+        // onDone: 流结束时持久化
+        () => {
+          persist()
+        }
+      )
     } catch {
       alert("发送消息失败，请重试")
+      // 如果失败，更新消息显示错误
+      updateMessageContent(assistantMessageId, "消息发送失败，请重试")
     } finally {
       setLoading(false)
     }

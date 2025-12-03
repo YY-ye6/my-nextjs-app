@@ -33,6 +33,7 @@ export interface ChatStore {
   deleteConversation: (id: string) => void
   switchConversation: (id: string) => void
   addMessage: (message: ChatMessage) => void
+  updateMessageContent: (messageId: string, content: string) => void
   setLoading: (loading: boolean) => void
   setTheme: (theme: Theme) => void
 
@@ -116,6 +117,20 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       return { conversations }
     })
     get().persist()
+  },
+
+  updateMessageContent: (messageId, content) => {
+    set((state) => ({
+      conversations: state.conversations.map((conv) => {
+        if (conv.id !== state.currentConversationId) return conv
+        return {
+          ...conv,
+          messages: conv.messages.map((msg) =>
+            msg.id === messageId ? { ...msg, content } : msg
+          ),
+        }
+      }),
+    }))
   },
 
   setLoading: (isLoading) => set({ isLoading }),

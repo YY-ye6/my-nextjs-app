@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 转换为 Dify 格式
+    // 使用 streaming 模式调用 Dify API
     const difyResponse = await fetch(`${DIFY_API_URL}/chat-messages`, {
       method: "POST",
       headers: {
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         inputs: {},
         query: messages[messages.length - 1].content,
-        response_mode: "blocking",
+        response_mode: "streaming",
         user: "user-default",
       }),
     })
@@ -42,12 +42,60 @@ export async function POST(request: NextRequest) {
       throw new Error("Dify API 错误")
     }
 
-    const data = await difyResponse.json()
+    // 转发流式响应
+    const encoder = new TextEncoder()
+    const stream = new ReadableStream({
+      async start(controller) {
+        const reader = difyResponse.body?.getReader()
+        if (!reader) {
+          controller.close()
+          return
+        }
 
-    return NextResponse.json({
-      id: data.message_id || crypto.randomUUID(),
-      role: "assistant",
-      content: data.answer,
+        const decoder = new TextDecoder()
+
+        try {
+          while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+
+            const chunk = decoder.decode(value, { stream: true })
+            const lines = chunk.split("\n")
+
+            for (const line of lines) {
+              if (line.startsWith("data: ")) {
+                const data = line.slice(6)
+                if (data === "[DONE]") continue
+
+                try {
+                  const parsed = JSON.parse(data)
+                  // 提取 answer 字段中的文本
+                  if (parsed.event === "message" && parsed.answer) {
+                    controller.enqueue(
+                      encoder.encode(`data: ${JSON.stringify({ content: parsed.answer, id: parsed.message_id })}\n\n`)
+                    )
+                  } else if (parsed.event === "message_end") {
+                    controller.enqueue(encoder.encode("data: [DONE]\n\n"))
+                  }
+                } catch {
+                  // 忽略解析错误
+                }
+              }
+            }
+          }
+        } finally {
+          reader.releaseLock()
+          controller.close()
+        }
+      },
+    })
+
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
     })
   } catch (error) {
     console.error("Chat API 错误:", error)

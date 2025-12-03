@@ -3,7 +3,7 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 import type { ChatMessage as ChatMessageType } from "@/lib/types"
-import { Bot, User } from "lucide-react"
+import { Bot, User, Loader2 } from "lucide-react"
 
 interface ChatMessageProps {
   message: ChatMessageType
@@ -11,6 +11,7 @@ interface ChatMessageProps {
 
 export function ChatMessage({ message }: ChatMessageProps) {
   const isUser = message.role === "user"
+  const isEmptyAssistant = !isUser && !message.content
 
   return (
     <div
@@ -39,7 +40,11 @@ export function ChatMessage({ message }: ChatMessageProps) {
             : "rounded-bl-md bg-muted text-muted-foreground"
         )}
       >
-        <p className="whitespace-pre-wrap break-words">{message.content}</p>
+        {isEmptyAssistant ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <p className="whitespace-pre-wrap break-words">{message.content}</p>
+        )}
 
         {/* 图片预览 */}
         {message.file && (
