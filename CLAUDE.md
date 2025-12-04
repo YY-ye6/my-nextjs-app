@@ -114,3 +114,7 @@ Uses Geist and Geist Mono fonts from `next/font/google`:
 5. **Server vs Client Components**: Default to Server Components (no 'use client'). Only add 'use client' when using hooks, event handlers, or browser-only APIs.
 
 6. **ESLint Configuration**: Uses flat config format (eslint.config.mjs) with Next.js recommended rules for core web vitals and TypeScript.
+
+7. **Adding Components**: Use shadcn/ui for new components. Run `pnpm dlx shadcn@latest add <component-name>` to install components into `components/ui/`.
+
+8. **Adding Pages**: Create new routes in the `app/` directory and register them in `lib/routes.ts` for centralized route management.
