@@ -42,7 +42,7 @@ export default function ChatPage() {
         <div className="relative flex flex-1 flex-col overflow-hidden">
           <div
             ref={scrollContainerRef}
-            className="flex-1 overflow-y-auto"
+            className="flex flex-1 flex-col overflow-y-auto"
           >
             <ChatMessages
               ref={chatMessagesRef}
