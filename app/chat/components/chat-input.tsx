@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, type KeyboardEvent, type ChangeEvent } from "react"
-import { Send, Paperclip, X, Loader2 } from "lucide-react"
+import { Send, Paperclip, X, Square } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { useChatStore, selectCurrentConversation } from "@/lib/store"
@@ -15,6 +15,7 @@ export function ChatInput() {
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const streamContentRef = useRef("")
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   const currentConversation = useChatStore(selectCurrentConversation)
   const addMessage = useChatStore((s) => s.addMessage)
@@ -51,6 +52,15 @@ export function ChatInput() {
     }
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
+    }
+  }
+
+  const handleStop = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+      abortControllerRef.current = null
+      setLoading(false)
+      persist()
     }
   }
 
@@ -99,6 +109,9 @@ export function ChatInput() {
     addMessage(assistantMessage)
     streamContentRef.current = ""
 
+    // 创建 AbortController
+    abortControllerRef.current = new AbortController()
+
     // 发送到 API（流式）
     try {
       setLoading(true)
@@ -114,14 +127,20 @@ export function ChatInput() {
         // onDone: 流结束时持久化
         () => {
           persist()
-        }
+        },
+        abortControllerRef.current.signal
       )
-    } catch {
+    } catch (error) {
+      // 如果是用户主动取消，不显示错误
+      if (error instanceof Error && error.name === "AbortError") {
+        return
+      }
       alert("发送消息失败，请重试")
       // 如果失败，更新消息显示错误
       updateMessageContent(assistantMessageId, "消息发送失败，请重试")
     } finally {
       setLoading(false)
+      abortControllerRef.current = null
     }
   }
 
@@ -183,18 +202,24 @@ export function ChatInput() {
             disabled={isLoading}
           />
 
-          {/* 发送按钮 */}
-          <Button
-            onClick={handleSend}
-            disabled={!canSend}
-            size="icon"
-          >
-            {isLoading || isUploading ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
+          {/* 发送/暂停按钮 */}
+          {isLoading ? (
+            <Button
+              onClick={handleStop}
+              size="icon"
+              variant="destructive"
+            >
+              <Square className="h-4 w-4 fill-current" />
+            </Button>
+          ) : (
+            <Button
+              onClick={handleSend}
+              disabled={!canSend}
+              size="icon"
+            >
               <Send className="h-5 w-5" />
-            )}
-          </Button>
+            </Button>
+          )}
         </div>
       </div>
     </div>

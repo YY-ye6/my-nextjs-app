@@ -5,12 +5,14 @@ const API_BASE = "/api"
 export async function sendChatMessageStream(
   messages: ChatMessage[],
   onChunk: (content: string, id?: string) => void,
-  onDone: () => void
+  onDone: () => void,
+  signal?: AbortSignal
 ): Promise<void> {
   const response = await fetch(`${API_BASE}/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ messages }),
+    signal,
   })
 
   if (!response.ok) {
