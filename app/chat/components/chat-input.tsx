@@ -16,6 +16,7 @@ export function ChatInput() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const streamContentRef = useRef("")
   const abortControllerRef = useRef<AbortController | null>(null)
+  const currentAssistantMessageIdRef = useRef<string | null>(null)
 
   const currentConversation = useChatStore(selectCurrentConversation)
   const addMessage = useChatStore((s) => s.addMessage)
@@ -59,6 +60,19 @@ export function ChatInput() {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort()
       abortControllerRef.current = null
+
+      // 如果内容为空或只有思考内容，添加停止提示
+      if (currentAssistantMessageIdRef.current) {
+        const content = streamContentRef.current
+        if (!content || content.match(/^<think>[\s\S]*$/)) {
+          // 如果有未闭合的 think 标签，先闭合它
+          const newContent = content
+            ? content + "</think>\n\n*已停止生成*"
+            : "*已停止生成*"
+          updateMessageContent(currentAssistantMessageIdRef.current, newContent)
+        }
+      }
+
       setLoading(false)
       persist()
     }
@@ -108,6 +122,7 @@ export function ChatInput() {
     }
     addMessage(assistantMessage)
     streamContentRef.current = ""
+    currentAssistantMessageIdRef.current = assistantMessageId
 
     // 创建 AbortController
     abortControllerRef.current = new AbortController()
@@ -141,6 +156,7 @@ export function ChatInput() {
     } finally {
       setLoading(false)
       abortControllerRef.current = null
+      currentAssistantMessageIdRef.current = null
     }
   }
 
