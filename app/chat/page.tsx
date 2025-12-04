@@ -19,15 +19,23 @@ export default function ChatPage() {
     const container = scrollContainerRef.current
     if (!container) return
 
-    const handleScroll = () => {
+    const checkScrollButton = () => {
       const { scrollTop, scrollHeight, clientHeight } = container
       // 距离底部超过 100px 时显示按钮
       const isNearBottom = scrollHeight - scrollTop - clientHeight < 100
       setShowScrollButton(!isNearBottom)
     }
 
-    container.addEventListener("scroll", handleScroll)
-    return () => container.removeEventListener("scroll", handleScroll)
+    // 会话切换时重置状态并检查
+    setShowScrollButton(false)
+    // 延迟检查，等待内容渲染完成
+    const timer = setTimeout(checkScrollButton, 100)
+
+    container.addEventListener("scroll", checkScrollButton)
+    return () => {
+      container.removeEventListener("scroll", checkScrollButton)
+      clearTimeout(timer)
+    }
   }, [currentConversation?.id])
 
   const scrollToBottom = () => {
