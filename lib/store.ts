@@ -96,7 +96,18 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   },
 
   switchConversation: (id) => {
-    set({ currentConversationId: id })
+    set((state) => {
+      // 更新被点击会话的 updatedAt，使其排到顶部
+      const conversations = state.conversations
+        .map((conv) =>
+          conv.id === id ? { ...conv, updatedAt: Date.now() } : conv
+        )
+        .sort((a, b) => b.updatedAt - a.updatedAt)
+      return {
+        conversations,
+        currentConversationId: id,
+      }
+    })
     get().persist()
   },
 
