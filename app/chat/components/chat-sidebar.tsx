@@ -58,7 +58,7 @@ export function ChatSidebar() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
-                    className="shrink-0 rounded p-1 opacity-0 transition-opacity hover:bg-sidebar-accent group-hover:opacity-100"
+                    className="shrink-0 rounded p-1 opacity-0 transition-opacity hover:bg-sidebar-accent group-hover:opacity-100 data-[state=open]:opacity-100"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <MoreHorizontal className="h-4 w-4" />
