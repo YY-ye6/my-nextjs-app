@@ -24,7 +24,14 @@ export const ChatMessages = forwardRef<ChatMessagesRef, ChatMessagesProps>(
 
     // 消息变化时自动滚动到底部
     useEffect(() => {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" })
+      if (messages.length === 0) return
+
+      // 使用 setTimeout 确保 DOM 完全渲染后再滚动
+      const timer = setTimeout(() => {
+        bottomRef.current?.scrollIntoView({ behavior: "smooth" })
+      }, 500)
+
+      return () => clearTimeout(timer)
     }, [messages])
 
     if (messages.length === 0) {
